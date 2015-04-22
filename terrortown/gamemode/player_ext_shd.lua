@@ -10,13 +10,6 @@ function plymeta:IsSpec() return self:Team() == TEAM_SPEC end
 
 AccessorFunc(plymeta, "role", "Role", FORCE_NUMBER)
 
--- Role access
-function plymeta:GetTraitor() return self:GetRole() == ROLE_TRAITOR end
-function plymeta:GetDetective() return self:GetRole() == ROLE_DETECTIVE end
-
-plymeta.IsTraitor = plymeta.GetTraitor
-plymeta.IsDetective = plymeta.GetDetective
-
 function plymeta:IsSpecial() return self:GetRole() != ROLE_INNOCENT end
 
 -- Player is alive and in an active round
@@ -31,10 +24,19 @@ function plymeta:IsActiveTraitor() return self:IsActiveRole(ROLE_TRAITOR) end
 function plymeta:IsActiveDetective() return self:IsActiveRole(ROLE_DETECTIVE) end
 function plymeta:IsActiveSpecial() return self:IsSpecial() and self:IsActive() end
 
+function plymeta:IsActiveRole(roleID)
+	if (self:IsActive() and self:IsRole(roleID)) then
+		return true;
+	else
+		return false;
+	end;
+end;
+
 local role_strings = {
    [ROLE_TRAITOR]   = "traitor",
    [ROLE_INNOCENT]  = "innocent",
-   [ROLE_DETECTIVE] = "detective"
+   [ROLE_DETECTIVE] = "detective",
+	[ROLE_MANIAC]    = "maniac"
 };
 
 local GetRTranslation = CLIENT and LANG.GetRawTranslation or util.passthrough

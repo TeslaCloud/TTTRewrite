@@ -1,83 +1,29 @@
+if (!TTT) then
+	TTT = GM;
+else
+	CurrentGM = TTT;
+	table.Merge(CurrentGM, GM);
+	TTT = nil;
+	
+	TTT = GM;
+	table.Merge(TTT, CurrentGM);
+	CurrentGM = nil;
+end;
+
 GM.Name = "Trouble in Terrorist Town"
 GM.Author = "Bad King Urgrain"
 GM.Email = "thegreenbunny@gmail.com"
 GM.Website = "ttt.badking.net"
 -- Date of latest changes (YYYY-MM-DD)
-GM.Version = "2015-03-02"
-
+GM.Version = "2015-03-30"
 
 GM.Customized = false
 
--- Round status consts
-ROUND_WAIT   = 1
-ROUND_PREP   = 2
-ROUND_ACTIVE = 3
-ROUND_POST   = 4
+-- Fix name conflicts. Just because I like using
+-- "player" instead of "ply" :p
+_player, _team, _file = player, team, file;
 
--- Player roles
-ROLE_INNOCENT  = 0
-ROLE_TRAITOR   = 1
-ROLE_DETECTIVE = 2
-ROLE_NONE = ROLE_INNOCENT
-
--- Game event log defs
-EVENT_KILL        = 1
-EVENT_SPAWN       = 2
-EVENT_GAME        = 3
-EVENT_FINISH      = 4
-EVENT_SELECTED    = 5
-EVENT_BODYFOUND   = 6
-EVENT_C4PLANT     = 7
-EVENT_C4EXPLODE   = 8
-EVENT_CREDITFOUND = 9
-EVENT_C4DISARM    = 10
-
-WIN_NONE      = 1
-WIN_TRAITOR   = 2
-WIN_INNOCENT  = 3
-WIN_TIMELIMIT = 4
-
--- Weapon categories, you can only carry one of each
-WEAPON_NONE   = 0
-WEAPON_MELEE  = 1
-WEAPON_PISTOL = 2
-WEAPON_HEAVY  = 3
-WEAPON_NADE   = 4
-WEAPON_CARRY  = 5
-WEAPON_EQUIP1 = 6
-WEAPON_EQUIP2 = 7
-WEAPON_ROLE   = 8
-
-WEAPON_EQUIP = WEAPON_EQUIP1
-WEAPON_UNARMED = -1
-
--- Kill types discerned by last words
-KILL_NORMAL  = 0
-KILL_SUICIDE = 1
-KILL_FALL    = 2
-KILL_BURN    = 3
-
--- Entity types a crowbar might open
-OPEN_NO   = 0
-OPEN_DOOR = 1
-OPEN_ROT  = 2
-OPEN_BUT  = 3
-OPEN_NOTOGGLE = 4 --movelinear
-
-
-COLOR_WHITE  = Color(255, 255, 255, 255)
-COLOR_BLACK  = Color(0, 0, 0, 255)
-COLOR_GREEN  = Color(0, 255, 0, 255)
-COLOR_DGREEN = Color(0, 100, 0, 255)
-COLOR_RED    = Color(255, 0, 0, 255)
-COLOR_YELLOW = Color(200, 200, 0, 255)
-COLOR_LGRAY  = Color(200, 200, 200, 255)
-COLOR_BLUE   = Color(0, 0, 255, 255)
-COLOR_NAVY   = Color(0, 0, 100, 255)
-COLOR_PINK   = Color(255,0,255, 255)
-COLOR_ORANGE = Color(250, 100, 0, 255)
-COLOR_OLIVE  = Color(100, 100, 0, 255)
-
+include("sh_enum.lua");
 include("util.lua")
 include("lang_shd.lua") -- uses some of util
 include("equip_items_shd.lua")
@@ -88,6 +34,40 @@ function HasteMode() return GetGlobalBool("ttt_haste", false) end
 -- Create teams
 TEAM_TERROR = 1
 TEAM_SPEC = TEAM_SPECTATOR
+
+-- A function to include a file based on its prefix.
+function util.Include(name)
+	local isShared = (string.find(name, "sh_") or string.find(name, "shared.lua"));
+	local isClient = (string.find(name, "cl_") or string.find(name, "cl_init.lua"));
+	local isServer = string.find(name, "sv_");
+	
+	if (isServer and !SERVER) then return end;
+	
+	if (isShared and SERVER) then
+		AddCSLuaFile(name);
+	elseif (isClient and SERVER) then
+		AddCSLuaFile(name);
+		return;
+	end;
+	
+	include(name);
+end;
+
+-- A function to include files in a directory.
+function util.IncludeDirectory(directory)
+	if (string.sub(directory, -1) != "/") then
+		directory = directory.."/";
+	end;
+	
+	for k, v in pairs(file.Find(directory.."*.lua", "LUA", "namedesc")) do
+		self:Include(directory..v);
+	end;
+end;
+
+-- Include all of our roles.
+-- We don't want to be an ass, so we allow
+-- adding as much roles as you want.
+util.IncludeDirectory("roles");
 
 function GM:CreateTeams()
    team.SetUp(TEAM_TERROR, "Terrorists", Color(0, 200, 0, 255), false)
@@ -118,6 +98,14 @@ function GM:TTTShouldColorModel(mdl)
    };
    return table.HasValue(colorable, mdl)
 end
+
+-- A function to create a new meta table.
+function NewMetaTable(baseTable)
+	local obj = {};
+		setmetatable(obj, baseTable);
+		baseTable.__index = baseTable;
+	return obj;
+end;
 
 local ttt_playercolors = {
    all = {

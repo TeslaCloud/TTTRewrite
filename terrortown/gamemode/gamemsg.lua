@@ -72,7 +72,7 @@ local function GetPlayerFilter(pred)
 end
 
 function GetTraitorFilter(alive_only)
-   return GetPlayerFilter(function(p) return p:GetTraitor() and (not alive_only or p:Alive()) end)
+   return GetPlayerFilter(function(p) return p:IsRole("traitor") and (not alive_only or p:Alive()) end)
 end
 
 function GetDetectiveFilter(alive_only)

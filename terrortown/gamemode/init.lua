@@ -1,5 +1,8 @@
 ---- Trouble in Terrorist Town
 
+AddCSLuaFile("external/pon.lua");
+AddCSLuaFile("external/netstream.lua");
+AddCSLuaFile("sh_enum.lua");
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 AddCSLuaFile("cl_hud.lua")
@@ -30,6 +33,8 @@ AddCSLuaFile("cl_disguise.lua")
 AddCSLuaFile("cl_transfer.lua")
 AddCSLuaFile("cl_search.lua")
 AddCSLuaFile("cl_targetid.lua")
+AddCSLuaFile("sh_rolesystem.lua");
+
 AddCSLuaFile("vgui/ColoredBox.lua")
 AddCSLuaFile("vgui/SimpleIcon.lua")
 AddCSLuaFile("vgui/ProgressBar.lua")
@@ -41,12 +46,16 @@ AddCSLuaFile("vgui/sb_info.lua")
 
 include("shared.lua")
 
+include("external/pon.lua");
+include("external/netstream.lua");
+
 include("karma.lua")
 include("entity.lua")
 include("scoring_shd.lua")
 include("radar.lua")
 include("admin.lua")
 include("traitor_state.lua")
+include("sh_rolesystem.lua");
 include("propspec.lua")
 include("weaponry.lua")
 include("gamemsg.lua")
@@ -247,10 +256,8 @@ function GM:SyncGlobals()
    SetGlobalFloat("ttt_voice_drain_recharge", GetConVar("ttt_voice_drain_recharge"):GetFloat())
 end
 
-function SendRoundState(state, ply)
-   net.Start("TTT_RoundState")
-      net.WriteUInt(state, 3)
-   return ply and net.Send(ply) or net.Broadcast()
+function SendRoundState(rstate, ply)
+	netstream.Start(ply, "TTT_RoundState", {state = rstate});
 end
 
 -- Round state is encapsulated by set/get so that it can easily be changed to
@@ -392,7 +399,7 @@ local function CleanUp()
    end
 
    -- a different kind of cleanup
-   util.UnbridledHateForULX()
+   util.SafeRemoveHook("PlayerSay", "ULXMeCheck")
 end
 
 local function SpawnEntities()
@@ -527,6 +534,7 @@ end
 
 function TellTraitorsAboutTraitors()
    local traitornicks = {}
+	
    for k,v in pairs(player.GetAll()) do
       if v:IsTraitor() then
          table.insert(traitornicks, v:Nick())
@@ -659,7 +667,10 @@ function BeginRound()
 
    -- Select traitors & co. This is where things really start so we can't abort
    -- anymore.
-   SelectRoles()
+	
+	-- Using the brand new system that allows dynamic role management!
+   TTT.Role:PickPlayers();
+	
    LANG.Msg("round_selected")
    SendFullStateUpdate()
 
@@ -706,6 +717,9 @@ function PrintResultMessage(type)
    elseif type == WIN_INNOCENT then
       LANG.Msg("win_innocent")
       ServerLog("Result: innocent win.\n")
+	elseif type == WIN_MANIAC then
+		LANG.Msg("win_maniac");
+		ServerLog("Result: maniacs win.\n")
    else
       ServerLog("Result: unknown victory condition!\n")
    end
@@ -805,169 +819,40 @@ function GM:MapTriggeredEnd(wintype)
    self.MapWin = wintype
 end
 
--- The most basic win check is whether both sides have one dude alive
+-- We have 3 sides from the latest update.
+-- We need to have decent win checker in this case.
+-- *sigh* Hope it's not a big deal to rewrite it D:
+-- EDIT: nah, I just used the same method as the old system.
+-- ~ Mr. Meow
 function GM:TTTCheckForWin()
    if ttt_dbgwin:GetBool() then return WIN_NONE end
 
-   if GAMEMODE.MapWin == WIN_TRAITOR or GAMEMODE.MapWin == WIN_INNOCENT then
+   if GAMEMODE.MapWin == WIN_TRAITOR or GAMEMODE.MapWin == WIN_INNOCENT or GAMEMODE.MapWin == WIN_MANIAC then
       local mw = GAMEMODE.MapWin
       GAMEMODE.MapWin = WIN_NONE
       return mw
    end
-
-   local traitor_alive = false
-   local innocent_alive = false
-   for k,v in pairs(player.GetAll()) do
-      if v:Alive() and v:IsTerror() then
-         if v:GetTraitor() then
-            traitor_alive = true
-         else
-            innocent_alive = true
-         end
-      end
-
-      if traitor_alive and innocent_alive then
-         return WIN_NONE --early out
-      end
-   end
-
-   if traitor_alive and not innocent_alive then
-      return WIN_TRAITOR
-   elseif not traitor_alive and innocent_alive then
-      return WIN_INNOCENT
-   elseif not innocent_alive then
-      -- ultimately if no one is alive, traitors win
-      return WIN_TRAITOR
-   end
+	
+	local traitors = TTT.Role:CountRGAlive(RG_BAD);
+	local innocents = TTT.Role:CountRGAlive(RG_GOOD);
+	local maniacs = TTT.Role:CountRGAlive(RG_FFA);
+	
+	if (traitors == 0) then traitors = false; end;
+	if (maniacs == 0) then maniacs = false; end;
+	if (innocents == 0) then innocents = false; end;
+	
+	if (traitors and !maniacs and !innocents) then
+		return WIN_TRAITOR;
+	elseif (maniacs and !traitors and !innocents) then
+		return WIN_MANIAC;
+	elseif (innocents and !traitors and !maniacs) then
+		return WIN_INNOCENT;
+	else
+		return WIN_TRAITOR;
+	end;
 
    return WIN_NONE
 end
-
-local function GetTraitorCount(ply_count)
-   -- get number of traitors: pct of players rounded down
-   local traitor_count = math.floor(ply_count * GetConVar("ttt_traitor_pct"):GetFloat())
-   -- make sure there is at least 1 traitor
-   traitor_count = math.Clamp(traitor_count, 1, GetConVar("ttt_traitor_max"):GetInt())
-
-   return traitor_count
-end
-
-
-local function GetDetectiveCount(ply_count)
-   if ply_count < GetConVar("ttt_detective_min_players"):GetInt() then return 0 end
-
-   local det_count = math.floor(ply_count * GetConVar("ttt_detective_pct"):GetFloat())
-   -- limit to a max
-   det_count = math.Clamp(det_count, 1, GetConVar("ttt_detective_max"):GetInt())
-
-   return det_count
-end
-
-
-function SelectRoles()
-   local choices = {}
-   local prev_roles = {
-      [ROLE_INNOCENT] = {},
-      [ROLE_TRAITOR] = {},
-      [ROLE_DETECTIVE] = {}
-   };
-
-   if not GAMEMODE.LastRole then GAMEMODE.LastRole = {} end
-
-   for k,v in pairs(player.GetAll()) do
-      -- everyone on the spec team is in specmode
-      if IsValid(v) and (not v:IsSpec()) then
-         -- save previous role and sign up as possible traitor/detective
-
-         local r = GAMEMODE.LastRole[v:UniqueID()] or v:GetRole() or ROLE_INNOCENT
-
-         table.insert(prev_roles[r], v)
-
-         table.insert(choices, v)
-      end
-
-      v:SetRole(ROLE_INNOCENT)
-   end
-
-   -- determine how many of each role we want
-   local choice_count = #choices
-   local traitor_count = GetTraitorCount(choice_count)
-   local det_count = GetDetectiveCount(choice_count)
-
-   if choice_count == 0 then return end
-
-   -- first select traitors
-   local ts = 0
-   while ts < traitor_count do
-      -- select random index in choices table
-      local pick = math.random(1, #choices)
-
-      -- the player we consider
-      local pply = choices[pick]
-
-      -- make this guy traitor if he was not a traitor last time, or if he makes
-      -- a roll
-      if IsValid(pply) and
-         ((not table.HasValue(prev_roles[ROLE_TRAITOR], pply)) or (math.random(1, 3) == 2)) then
-         pply:SetRole(ROLE_TRAITOR)
-
-         table.remove(choices, pick)
-         ts = ts + 1
-      end
-   end
-
-   -- now select detectives, explicitly choosing from players who did not get
-   -- traitor, so becoming detective does not mean you lost a chance to be
-   -- traitor
-   local ds = 0
-   local min_karma = GetConVarNumber("ttt_detective_karma_min") or 0
-   while (ds < det_count) and (#choices >= 1) do
-
-      -- sometimes we need all remaining choices to be detective to fill the
-      -- roles up, this happens more often with a lot of detective-deniers
-      if #choices <= (det_count - ds) then
-         for k, pply in pairs(choices) do
-            if IsValid(pply) then
-               pply:SetRole(ROLE_DETECTIVE)
-            end
-         end
-
-         break -- out of while
-      end
-
-
-      local pick = math.random(1, #choices)
-      local pply = choices[pick]
-
-      -- we are less likely to be a detective unless we were innocent last round
-      if (IsValid(pply) and
-          ((pply:GetBaseKarma() > min_karma and
-           table.HasValue(prev_roles[ROLE_INNOCENT], pply)) or
-           math.random(1,3) == 2)) then
-
-         -- if a player has specified he does not want to be detective, we skip
-         -- him here (he might still get it if we don't have enough
-         -- alternatives)
-         if not pply:GetAvoidDetective() then
-            pply:SetRole(ROLE_DETECTIVE)
-            ds = ds + 1
-         end
-
-         table.remove(choices, pick)
-      end
-   end
-
-   GAMEMODE.LastRole = {}
-
-   for _, ply in pairs(player.GetAll()) do
-      -- initialize credit count for everyone based on their role
-      ply:SetDefaultCredits()
-
-      -- store a uid -> role map
-      GAMEMODE.LastRole[ply:UniqueID()] = ply:GetRole()
-   end
-end
-
 
 local function ForceRoundRestart(ply, command, args)
    -- ply is nil on dedicated server console
@@ -1005,3 +890,12 @@ function AnnounceVersion()
       end
    end
 end
+
+-- Called when player has been picked for a role.
+function GM:OnPlayerPicked(player, role)
+	local callback = TTT.Role.stored[role].Callback;
+	
+	if (callback) then
+		pcall(Callback, player);
+	end;
+end;

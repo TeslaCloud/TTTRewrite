@@ -1,28 +1,26 @@
 
 function GetTraitors()
-   local trs = {}
-   for k,v in ipairs(player.GetAll()) do
-      if v:GetTraitor() then table.insert(trs, v) end
-   end
-
-   return trs
+	return TTT.Role:GetPlayers("traitor");
 end
 
-function CountTraitors() return #GetTraitors() end
+function CountTraitors() return TTT.Role:Count("traitor"); end
 
 ---- Role state communication
 
 -- Send every player their role
 local function SendPlayerRoles()
    for k, v in pairs(player.GetAll()) do
-      net.Start("TTT_Role")
-         net.WriteUInt(v:GetRole(), 2)
-      net.Send(v)
+		netstream.Start(v, "TTT_Role", {role = v:GetRole()});
    end
 end
 
 local function SendRoleListMessage(role, role_ids, ply_or_rf)
-   net.Start("TTT_RoleList")
+	netstream.Start(ply_or_rf, "TTT_RoleList", {
+		role = role,
+		role_ids = role_ids
+	});
+	
+   --[[net.Start("TTT_RoleList")
       net.WriteUInt(role, 2)
 
       -- list contents
@@ -33,7 +31,7 @@ local function SendRoleListMessage(role, role_ids, ply_or_rf)
       end
 
    if ply_or_rf then net.Send(ply_or_rf)
-   else net.Broadcast() end
+   else net.Broadcast() end--]]
 end
 
 local function SendRoleList(role, ply_or_rf, pred)
@@ -93,9 +91,19 @@ function SendFullStateUpdate()
 end
 
 function SendRoleReset(ply_or_rf)
-   local plys = player.GetAll()
+   local players = player.GetAll()
+	local roleids = {};
+	
+	for k, v in pairs(plys) do
+		roleids[k] = v:EntIndex();
+   end;
 
-   net.Start("TTT_RoleList")
+	netstream.Start(ply_or_rf, "TTT_RoleList", {
+		role = "innocent",
+		role_ids = roleids
+	});
+	
+   --[[net.Start("TTT_RoleList")
       net.WriteUInt(ROLE_INNOCENT, 2)
 
       net.WriteUInt(#plys, 8)
@@ -104,7 +112,7 @@ function SendRoleReset(ply_or_rf)
       end
 
    if ply_or_rf then net.Send(ply_or_rf)
-   else net.Broadcast() end
+   else net.Broadcast() end--]]
 end
 
 ---- Console commands

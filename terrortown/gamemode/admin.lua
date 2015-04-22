@@ -26,21 +26,18 @@ end
 
 function PrintTraitors(ply)
    if not IsValid(ply) or ply:IsSuperAdmin() then
-      ServerLog(Format("%s used ttt_print_traitors\n", IsValid(ply) and ply:Nick() or "console"))
+      ServerLog(Format("%s used ttt_print_playerroles\n", IsValid(ply) and ply:Nick() or "console"))
 
       local pr = GetPrintFn(ply)
 
-      local ps = player.GetAll()
-      table.sort(ps, TraitorSort)
-
-      for _, p in pairs(ps) do
+      for _, p in pairs(player.GetAll()) do
          if IsValid(p) then
-            pr(p:GetTraitor() and "TRAITOR" or "Innocent", ":", p:Nick())
+            pr(p:GetRoleName(), ":", p:Nick())
          end
       end
    end
 end
-concommand.Add("ttt_print_traitors", PrintTraitors)
+concommand.Add("ttt_print_playerroles", PrintTraitors)
 
 function PrintGroups(ply)
    local pr = GetPrintFn(ply)

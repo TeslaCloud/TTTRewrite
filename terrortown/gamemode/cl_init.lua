@@ -1,16 +1,27 @@
 include("shared.lua")
 
 -- Define GM12 fonts for compatibility
-surface.CreateFont("DefaultBold", {font = "Tahoma",
-                                   size = 13,
-                                   weight = 1000})
-surface.CreateFont("TabLarge",    {font = "Tahoma",
-                                   size = 13,
-                                   weight = 700,
-                                   shadow = true, antialias = false})
-surface.CreateFont("Trebuchet22", {font = "Trebuchet MS",
-                                   size = 22,
-                                   weight = 900})
+surface.CreateFont("DefaultBold", {
+	font = "Tahoma",
+   size = 13,
+   weight = 1000
+})
+
+surface.CreateFont("TabLarge", {
+	font = "Tahoma",
+   size = 13,
+   weight = 700,
+   shadow = true, antialias = false
+})
+
+surface.CreateFont("Trebuchet22", {
+	font = "Trebuchet MS",
+   size = 22,
+   weight = 900
+})
+
+include("external/pon.lua");
+include("external/netstream.lua");
 
 include("scoring_shd.lua")
 include("corpse_shd.lua")
@@ -42,6 +53,7 @@ include("cl_scoring_events.lua")
 include("cl_popups.lua")
 include("cl_equip.lua")
 include("cl_voice.lua")
+include("sh_rolesystem.lua");
 
 function GM:Initialize()
    MsgN("TTT Client initializing...")
@@ -158,55 +170,39 @@ GM.TTTBeginRound = PlaySoundCue
 GM.TTTEndRound = PlaySoundCue
 
 --- usermessages
+netstream.Hook("TTT_Role", function(data)
+	if (!LocalPlayer().SetRole) then return; end;
+	
+	LocalPlayer():SetRole(data.role);
+	Msg("You are: "..string.upper(LocalPlayer():GetRoleName()));
+end);
 
-local function ReceiveRole()
-   local client = LocalPlayer()
-   local role = net.ReadUInt(2)
+netstream.Hook("TTT_RoleList", function(data)
+	local role = data.role;
+	local entIndex = data.role_ids;
+	
+	for k, v in pairs(entIndex) do
+		local curPlayer = player.GetByID(v);
+		if (IsValid(curPlayer)) then
+			curPlayer:SetRole(role);
+		end;
+		
+		if (curPlayer:IsRoleGroup(RG_BAD)) then
+			curPlayer.traitor_gvoice = false;
+		end;
+	end;
+end);
 
-   -- after a mapswitch, server might have sent us this before we are even done
-   -- loading our code
-   if not client.SetRole then return end
+netstream.Hook("TTT_RoundState", function(data)
+   local o = GetRoundState();
+   GAMEMODE.round_state = data.state;
 
-   client:SetRole(role)
+   if (o != GAMEMODE.round_state) then
+      RoundStateChange(o, GAMEMODE.round_state);
+   end;
 
-   Msg("You are: ")
-   if client:IsTraitor() then MsgN("TRAITOR")
-   elseif client:IsDetective() then MsgN("DETECTIVE")
-   else MsgN("INNOCENT") end
-end
-net.Receive("TTT_Role", ReceiveRole)
-
-local function ReceiveRoleList()
-   local role = net.ReadUInt(2)
-   local num_ids = net.ReadUInt(8)
-
-   for i=1, num_ids do
-      local eidx = net.ReadUInt(7) + 1 -- we - 1 worldspawn=0
-
-      local ply = player.GetByID(eidx)
-      if IsValid(ply) and ply.SetRole then
-         ply:SetRole(role)
-
-         if ply:IsTraitor() then
-            ply.traitor_gvoice = false -- assume traitorchat by default
-         end
-      end
-   end
-end
-net.Receive("TTT_RoleList", ReceiveRoleList)
-
--- Round state comm
-local function ReceiveRoundState()
-   local o = GetRoundState()
-   GAMEMODE.round_state = net.ReadUInt(3)
-
-   if o != GAMEMODE.round_state then
-      RoundStateChange(o, GAMEMODE.round_state)
-   end
-
-   MsgN("Round state: " .. GAMEMODE.round_state)
-end
-net.Receive("TTT_RoundState", ReceiveRoundState)
+   MsgN("Round state: "..GAMEMODE.round_state);
+end);
 
 -- Cleanup at start of new round
 function GM:ClearClientState()

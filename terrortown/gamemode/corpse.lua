@@ -53,6 +53,7 @@ local function IdentifyBody(ply, rag)
    if bodyfound:GetBool() and not CORPSE.GetFound(rag, false) then
       local roletext = nil
       local role = rag.was_role
+		
       if role == ROLE_TRAITOR then
          roletext = "body_found_t"
       elseif role == ROLE_DETECTIVE then

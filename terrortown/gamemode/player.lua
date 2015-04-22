@@ -18,6 +18,9 @@ function GM:PlayerInitialSpawn( ply )
    if not GAMEMODE.cvar_init then
       GAMEMODE:InitCvars()
    end
+	
+	-- RoleID
+	ply:SetDTString(1, "none");
 
    ply:InitialSpawn()
 
