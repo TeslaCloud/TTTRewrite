@@ -103,11 +103,6 @@ if CLIENT then
    end
 end
 
-function AccessorFuncDT(tbl, varname, name)
-   tbl["Get" .. name] = function(s) return s.dt and s.dt[varname] end
-   tbl["Set" .. name] = function(s, v) if s.dt then s.dt[varname] = v end end
-end
-
 function util.PaintDown(start, effname, ignore)
    local btr = util.TraceLine({start=start, endpos=(start + Vector(0,0,-256)), filter=ignore, mask=MASK_SOLID})
 

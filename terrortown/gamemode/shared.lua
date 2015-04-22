@@ -25,6 +25,8 @@ _player, _team, _file = player, team, file;
 
 -- A function to include a file based on its prefix.
 function util.Include(name)
+	if SERVER then print("including file: "..name); end;
+	
 	local isShared = (string.find(name, "sh_") or string.find(name, "shared.lua"));
 	local isClient = (string.find(name, "cl_") or string.find(name, "cl_init.lua"));
 	local isServer = string.find(name, "sv_");
@@ -44,14 +46,31 @@ end;
 -- A function to include files in a directory.
 function util.IncludeDirectory(directory)
 	if (string.sub(directory, -1) != "/") then
-		directory = directory.."/";
+		realdir = directory.."/";
+		directory = "gamemodes/terrortown/gamemode/"..directory.."/";
 	end;
 	
-	for k, v in pairs(file.Find(directory.."*.lua", "LUA", "namedesc")) do
-		self:Include(directory..v);
+	local files, dirs = file.Find(directory.."*.lua", "MOD", "namedesc");
+	
+	for k, v in pairs(files) do
+		util.Include(realdir..v);
 	end;
 end;
 
+-- A function to create a new meta table.
+function NewMetaTable(baseTable)
+	local obj = {};
+		setmetatable(obj, baseTable);
+		baseTable.__index = baseTable;
+	return obj;
+end;
+
+function AccessorFuncDT(tbl, varname, name)
+   tbl["Get" .. name] = function(s) return s.dt and s.dt[varname] end
+   tbl["Set" .. name] = function(s, v) if s.dt then s.dt[varname] = v end end
+end
+
+include("libs/sh_enum.lua");
 util.IncludeDirectory("libs");
 
 function DetectiveMode() return GetGlobalBool("ttt_detective", false) end
@@ -95,14 +114,6 @@ function GM:TTTShouldColorModel(mdl)
    };
    return table.HasValue(colorable, mdl)
 end
-
--- A function to create a new meta table.
-function NewMetaTable(baseTable)
-	local obj = {};
-		setmetatable(obj, baseTable);
-		baseTable.__index = baseTable;
-	return obj;
-end;
 
 local ttt_playercolors = {
    all = {
