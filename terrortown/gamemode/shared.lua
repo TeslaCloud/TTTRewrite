@@ -23,18 +23,6 @@ GM.Customized = false
 -- "player" instead of "ply" :p
 _player, _team, _file = player, team, file;
 
-include("sh_enum.lua");
-include("util.lua")
-include("lang_shd.lua") -- uses some of util
-include("equip_items_shd.lua")
-
-function DetectiveMode() return GetGlobalBool("ttt_detective", false) end
-function HasteMode() return GetGlobalBool("ttt_haste", false) end
-
--- Create teams
-TEAM_TERROR = 1
-TEAM_SPEC = TEAM_SPECTATOR
-
 -- A function to include a file based on its prefix.
 function util.Include(name)
 	local isShared = (string.find(name, "sh_") or string.find(name, "shared.lua"));
@@ -63,6 +51,15 @@ function util.IncludeDirectory(directory)
 		self:Include(directory..v);
 	end;
 end;
+
+util.IncludeDirectory("libs");
+
+function DetectiveMode() return GetGlobalBool("ttt_detective", false) end
+function HasteMode() return GetGlobalBool("ttt_haste", false) end
+
+-- Create teams
+TEAM_TERROR = 1
+TEAM_SPEC = TEAM_SPECTATOR
 
 -- Include all of our roles.
 -- We don't want to be an ass, so we allow

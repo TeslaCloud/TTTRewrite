@@ -23,37 +23,10 @@ surface.CreateFont("Trebuchet22", {
 include("external/pon.lua");
 include("external/netstream.lua");
 
-include("scoring_shd.lua")
-include("corpse_shd.lua")
-include("player_ext_shd.lua")
-include("weaponry_shd.lua")
-
-include("vgui/ColoredBox.lua")
-include("vgui/SimpleIcon.lua")
-include("vgui/ProgressBar.lua")
-include("vgui/ScrollLabel.lua")
-
-include("cl_radio.lua")
-include("cl_disguise.lua")
-include("cl_transfer.lua")
-include("cl_targetid.lua")
-include("cl_search.lua")
-include("cl_radar.lua")
-include("cl_tbuttons.lua")
-include("cl_scoreboard.lua")
-include("cl_tips.lua")
-include("cl_help.lua")
-include("cl_hud.lua")
-include("cl_msgstack.lua")
-include("cl_hudpickup.lua")
-include("cl_keys.lua")
-include("cl_wepswitch.lua")
-include("cl_scoring.lua")
-include("cl_scoring_events.lua")
-include("cl_popups.lua")
-include("cl_equip.lua")
-include("cl_voice.lua")
-include("sh_rolesystem.lua");
+include("libs/vgui/ColoredBox.lua")
+include("libs/vgui/SimpleIcon.lua")
+include("libs/vgui/ProgressBar.lua")
+include("libs/vgui/ScrollLabel.lua")
 
 function GM:Initialize()
    MsgN("TTT Client initializing...")

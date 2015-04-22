@@ -1,5 +1,5 @@
 
-include("weaponry_shd.lua") -- inits WEPS tbl
+include("sh_weaponry.lua") -- inits WEPS tbl
 
 ---- Weapon system, pickup limits, etc
 
