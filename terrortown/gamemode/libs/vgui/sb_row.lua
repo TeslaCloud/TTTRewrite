@@ -79,6 +79,7 @@ function GM:TTTScoreboardColorForPlayer(ply)
    elseif ply:IsAdmin() and GetGlobalBool("ttt_highlight_admins", true) then
       return namecolor.admin
    end
+	
    return namecolor.default
 end
 
@@ -104,15 +105,10 @@ function PANEL:Paint()
 --   end
 
    local ply = self.Player
+	local colTable = ply:GetRoleColor();
 
-   if ply:IsTraitor() then
-      surface.SetDrawColor(255, 0, 0, 30)
-      surface.DrawRect(0, 0, self:GetWide(), SB_ROW_HEIGHT)
-   elseif ply:IsDetective() then
-      surface.SetDrawColor(0, 0, 255, 30)
-      surface.DrawRect(0, 0, self:GetWide(), SB_ROW_HEIGHT)
-   end
-
+	surface.SetDrawColor(colTable);
+	surface.DrawRect(0, 0, self:GetWide(), SB_ROW_HEIGHT);
 
    if ply == LocalPlayer() then
       surface.SetDrawColor( 200, 200, 200, math.Clamp(math.sin(RealTime() * 2) * 50, 0, 100))

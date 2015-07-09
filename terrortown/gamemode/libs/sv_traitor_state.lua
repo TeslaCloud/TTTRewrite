@@ -94,7 +94,7 @@ function SendRoleReset(ply_or_rf)
    local players = player.GetAll()
 	local roleids = {};
 	
-	for k, v in pairs(plys) do
+	for k, v in pairs(players) do
 		roleids[k] = v:EntIndex();
    end;
 

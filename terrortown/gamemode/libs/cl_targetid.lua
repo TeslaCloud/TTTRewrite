@@ -40,7 +40,7 @@ function GM:PostDrawTranslucentRenderables()
    client = LocalPlayer()
    plys = GetPlayers()
 
-   if client:GetTraitor() then
+   if client:IsTraitor() then
 
       dir = client:GetForward() * -1
 
@@ -48,7 +48,7 @@ function GM:PostDrawTranslucentRenderables()
 
       for i=1, #plys do
          ply = plys[i]
-         if ply:IsActiveTraitor() and ply != client then
+         if ply:IsTraitor() and ply != client then
             pos = ply:GetPos()
             pos.z = pos.z + 74
 

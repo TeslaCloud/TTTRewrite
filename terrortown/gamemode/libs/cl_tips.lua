@@ -103,7 +103,7 @@ function PANEL:SetTip(idx)
       return
    end
 
-   self.TipIndex = idx
+   self.TipIndex = idx or 0;
 
    local tip_id = tip_ids[idx]
 
@@ -120,7 +120,9 @@ function PANEL:SetTip(idx)
 end
 
 function PANEL:NextTip(auto)
-   local idx = self.TipIndex + 1
+	local safeIndex = self.TipIndex or 0;
+   local idx = safeIndex + 1
+	
    if idx > #tip_ids then
       idx = 1
    end

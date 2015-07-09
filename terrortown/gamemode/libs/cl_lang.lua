@@ -18,10 +18,11 @@ LANG.ServerLanguage  = "english"
 local cached_default, cached_active
 
 function LANG.CreateLanguage(lang_name)
-   if not lang_name then return end
+   if (!lang_name) then return end
+	
    lang_name = string.lower(lang_name)
 
-   if not LANG.IsLanguage(lang_name) then
+   if (!LANG.IsLanguage(lang_name)) then
       -- Empty string is very convenient to have, so init with that.
       LANG.Strings[lang_name] = { [""] = "" }
    end
@@ -31,12 +32,11 @@ function LANG.CreateLanguage(lang_name)
 
       -- when a string is not found in the active or the default language, an
       -- error message is shown
-      setmetatable(LANG.Strings[lang_name],
-                   {
-                      __index = function(tbl, name)
-                                   return Format("[ERROR: Translation of %s not found]", name), false
-                                end
-                   })
+      setmetatable(LANG.Strings[lang_name], {
+			__index = function(tbl, name)
+				return Format("[ERROR: Translation of %s not found]", name), false
+			end
+		})
    end
 
    return LANG.Strings[lang_name]
@@ -47,62 +47,13 @@ end
 function LANG.AddToLanguage(lang_name, string_name, string_text)
    lang_name = lang_name and string.lower(lang_name)
 
-   if not LANG.IsLanguage(lang_name) then
+   if (!LANG.IsLanguage(lang_name)) then
       ErrorNoHalt(Format("Failed to add '%s' to language '%s': language does not exist.\n", tostring(string_name), tostring(lang_name)))
    end
 
    LANG.Strings[lang_name][string_name] = string_text
 
    return string_name
-end
-
--- Simple and fastest name->string lookup
-function LANG.GetTranslation(name)
-   return cached_active[name]
-end
-
--- Lookup with no error upon failback, just nil. Slightly slower, but best way
--- to handle lookup of strings that may legitimately fail to exist
--- (eg. SWEP-defined).
-function LANG.GetRawTranslation(name)
-   return rawget(cached_active, name) or rawget(cached_default, name)
-end
-
--- A common idiom
-local GetRaw = LANG.GetRawTranslation
-function LANG.TryTranslation(name)
-   return GetRaw(name) or name
-end
-
-local interp = string.Interp
-
--- Parameterised version, performs string interpolation. Slower than
--- GetTranslation.
-function LANG.GetParamTranslation(name, params)
-   return interp(cached_active[name], params)
-end
-LANG.GetPTranslation = LANG.GetParamTranslation
-
-function LANG.GetTranslationFromLanguage(name, lang_name)
-   return rawget(LANG.Strings[lang_name], name)
-end
-
--- Ability to perform lookups in the current language table directly is of
--- interest to consumers in draw/think hooks. Grabbing a translation directly
--- from the table is very fast, and much simpler than a local caching solution.
--- Modifying it would typically be a bad idea.
-function LANG.GetUnsafeLanguageTable() return cached_active end
-
-function LANG.GetUnsafeNamed(name) return LANG.Strings[name] end
-
--- Safe and slow access, not sure if it's ever useful.
-function LANG.GetLanguageTable(lang_name)
-   lang_name = lang_name or LANG.ActiveLanguage
-
-   local cpy = table.Copy(LANG.Strings[lang_name])
-   SetFallback(cpy)
-
-   return cpy
 end
 
 
@@ -116,11 +67,9 @@ local function SetFallback(tbl)
    -- than using branching ("return lang[x] or default[x] or errormsg") and
    -- allows fallback to occur even when consumer code directly accesses the
    -- lang table for speed (eg. in a rendering hook).
-   setmetatable(tbl,
-                {
-                   __index = cached_default
-                })
-
+   setmetatable(tbl, {
+		__index = cached_default
+	})
 end
 
 function LANG.SetActiveLanguage(lang_name)
@@ -249,6 +198,67 @@ end
 
 function LANG.ShowStyledMsg(text, style)
    style(text)
+end
+
+-- Add all lua files in our /lang/ dir
+local dir = GM.FolderName or "terrortown"
+local files, dirs = file.Find(dir .. "/gamemode/libs/lang/*.lua", "LUA" )
+for _, fname in pairs(files) do
+   local path = "lang/" .. fname
+   -- filter out directories and temp files (like .lua~)
+   if string.Right(fname, 3) == "lua" then
+      util.IncludeClientFile(path)
+      MsgN("Included TTT language file: " .. fname)
+   end
+end
+
+-- Simple and fastest name->string lookup
+function LANG.GetTranslation(name)
+   return LANG.Strings[LANG.ActiveLanguage][name]
+end
+
+-- Ability to perform lookups in the current language table directly is of
+-- interest to consumers in draw/think hooks. Grabbing a translation directly
+-- from the table is very fast, and much simpler than a local caching solution.
+-- Modifying it would typically be a bad idea.
+function LANG.GetUnsafeLanguageTable() return LANG.Strings[LANG.ActiveLanguage] end
+
+function LANG.GetUnsafeNamed(name) return LANG.Strings[name] end
+
+-- Safe and slow access, not sure if it's ever useful.
+function LANG.GetLanguageTable(lang_name)
+   lang_name = lang_name or LANG.ActiveLanguage
+
+   local cpy = table.Copy(LANG.Strings[lang_name])
+   SetFallback(cpy)
+
+   return cpy
+end
+
+-- Lookup with no error upon failback, just nil. Slightly slower, but best way
+-- to handle lookup of strings that may legitimately fail to exist
+-- (eg. SWEP-defined).
+function LANG.GetRawTranslation(name)
+   return rawget(LANG.Strings[LANG.ActiveLanguage], name) or rawget(cached_default, name)
+end
+
+-- A common idiom
+local GetRaw = LANG.GetRawTranslation
+function LANG.TryTranslation(name)
+   return GetRaw(name) or name
+end
+
+local interp = string.Interp
+
+-- Parameterised version, performs string interpolation. Slower than
+-- GetTranslation.
+function LANG.GetParamTranslation(name, params)
+   return interp(LANG.Strings[LANG.ActiveLanguage][name], params)
+end
+LANG.GetPTranslation = LANG.GetParamTranslation
+
+function LANG.GetTranslationFromLanguage(name, lang_name)
+   return rawget(LANG.Strings[lang_name], name)
 end
 
 function LANG.ProcessMsg(name, params)

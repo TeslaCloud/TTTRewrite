@@ -1,3 +1,4 @@
+include("sh_weaponry.lua");
 
 DISGUISE = {}
 

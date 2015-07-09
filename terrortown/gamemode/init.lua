@@ -14,12 +14,13 @@ AddCSLuaFile("libs/vgui/sb_row.lua")
 AddCSLuaFile("libs/vgui/sb_team.lua")
 AddCSLuaFile("libs/vgui/sb_info.lua")
 
+AddCSLuaFile("shared.lua");
 include("shared.lua")
 
 CreateConVar("ttt_roundtime_minutes", "10", FCVAR_NOTIFY)
 CreateConVar("ttt_preptime_seconds", "30", FCVAR_NOTIFY)
 CreateConVar("ttt_posttime_seconds", "30", FCVAR_NOTIFY)
-CreateConVar("ttt_firstpreptime", "60")
+CreateConVar("ttt_firstpreptime", "10")
 
 local ttt_haste = CreateConVar("ttt_haste", "1", FCVAR_NOTIFY)
 CreateConVar("ttt_haste_starting_minutes", "5", FCVAR_NOTIFY)

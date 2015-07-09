@@ -96,9 +96,9 @@ function SCORE:HandleSelection()
    local traitors = {}
    local detectives = {}
    for k, ply in pairs(player.GetAll()) do
-      if ply:GetTraitor() then
+      if ply:IsTraitor() then
          table.insert(traitors, ply:UniqueID())
-      elseif ply:GetDetective() then
+      elseif ply:IsDetective() then
          table.insert(detectives, ply:UniqueID())
       end
    end

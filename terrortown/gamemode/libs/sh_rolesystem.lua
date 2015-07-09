@@ -35,6 +35,8 @@ function TTT.Role:Register(name, data)
 	
 	-- If not defined role should be enabled.
 	self.stored[id].active = data.active or true;
+	
+	print("registered role ID: "..id);
 end;
 
 -- A function to check if a role exists.
@@ -173,6 +175,10 @@ function playerMeta:SetRole(role)
 	return TTT.Role:SetRole(self, role);
 end;
 
+function playerMeta:GetRoleColor()
+	return TTT.Role:GetColor(self:GetRole());
+end;
+
 function playerMeta:IsRole(role)
 	return (self:GetRole() == role)
 end;
@@ -181,12 +187,24 @@ function playerMeta:IsTraitor()
 	return self:IsRole("traitor");
 end;
 
+function playerMeta:IsDetective()
+	return self:IsRole("detective");
+end;
+
 function playerMeta:GetRoleGroup()
-	return self.stored[self:GetRole()].group or RG_NONE;
+	return TTT.Role.stored[self:GetRole()].group or RG_NONE;
 end;
 
 function playerMeta:IsRoleGroup(rg)
 	return self:GetRoleGroup() == rg;
+end;
+
+function playerMeta:GetTraitor()
+	return self:IsTraitor();
+end;
+
+function playerMeta:GetDetective()
+	return self:IsDetective();
 end;
 
 -- A function to count player count in certain role.

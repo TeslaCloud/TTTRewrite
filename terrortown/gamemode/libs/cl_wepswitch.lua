@@ -69,7 +69,7 @@ function WSWITCH:DrawBarBg(x, y, w, h, col)
 
    local role = LocalPlayer():GetRole() or ROLE_INNOCENT
 
-   local c = col.tip[role]
+   local c = LocalPlayer():GetRoleColor();
 
    -- Draw the colour tip
    surface.SetTexture(barcorner)

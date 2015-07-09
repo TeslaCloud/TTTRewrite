@@ -1,3 +1,8 @@
+if (SERVER) then
+	local startTime = os.clock();
+	MsgC(Color(230, 80, 160, 255), "[TTT] Initializing started...\n");
+end;
+
 if (!TTT) then
 	TTT = GM;
 else
@@ -25,8 +30,6 @@ _player, _team, _file = player, team, file;
 
 -- A function to include a file based on its prefix.
 function util.Include(name)
-	if SERVER then print("including file: "..name); end;
-	
 	local isShared = (string.find(name, "sh_") or string.find(name, "shared.lua"));
 	local isClient = (string.find(name, "cl_") or string.find(name, "cl_init.lua"));
 	local isServer = string.find(name, "sv_");
@@ -41,19 +44,17 @@ function util.Include(name)
 	end;
 	
 	include(name);
+	print("included file: "..name);
 end;
 
 -- A function to include files in a directory.
 function util.IncludeDirectory(directory)
 	if (string.sub(directory, -1) != "/") then
-		realdir = directory.."/";
-		directory = "gamemodes/terrortown/gamemode/"..directory.."/";
+		directory = directory.."/";
 	end;
 	
-	local files, dirs = file.Find(directory.."*.lua", "MOD", "namedesc");
-	
-	for k, v in pairs(files) do
-		util.Include(realdir..v);
+	for k, v in pairs(file.Find(directory.."*.lua", "LUA", "namedesc")) do
+		util.Include(directory..v)
 	end;
 end;
 
@@ -70,20 +71,9 @@ function AccessorFuncDT(tbl, varname, name)
    tbl["Set" .. name] = function(s, v) if s.dt then s.dt[varname] = v end end
 end
 
-include("libs/sh_enum.lua");
-util.IncludeDirectory("libs");
-
-function DetectiveMode() return GetGlobalBool("ttt_detective", false) end
-function HasteMode() return GetGlobalBool("ttt_haste", false) end
-
 -- Create teams
 TEAM_TERROR = 1
 TEAM_SPEC = TEAM_SPECTATOR
-
--- Include all of our roles.
--- We don't want to be an ass, so we allow
--- adding as much roles as you want.
-util.IncludeDirectory("roles");
 
 function GM:CreateTeams()
    team.SetUp(TEAM_TERROR, "Terrorists", Color(0, 200, 0, 255), false)
@@ -93,6 +83,19 @@ function GM:CreateTeams()
    team.SetSpawnPoint(TEAM_TERROR, "info_player_deathmatch")
    team.SetSpawnPoint(TEAM_SPEC, "info_player_deathmatch")
 end
+
+util.Include("libs/sh_enum.lua");
+util.Include("libs/sh_lang.lua");
+util.Include("libs/sh_rolesystem.lua");
+util.IncludeDirectory("terrortown/gamemode/libs/");
+
+function DetectiveMode() return GetGlobalBool("ttt_detective", false) end
+function HasteMode() return GetGlobalBool("ttt_haste", false) end
+
+-- Include all of our roles.
+-- We don't want to be an ass, so we allow
+-- adding as much roles as you want.
+util.IncludeDirectory("terrortown/gamemode/roles/");
 
 -- Everyone's model
 local ttt_playermodels = {
