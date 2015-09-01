@@ -798,7 +798,7 @@ function GM:TTTCheckForWin()
 		return WIN_MANIAC;
 	elseif (innocents and !traitors and !maniacs) then
 		return WIN_INNOCENT;
-	else
+	elseif (!traitors and !innocents and !maniacs) then
 		return WIN_TRAITOR;
 	end;
 
@@ -845,6 +845,8 @@ end
 -- Called when player has been picked for a role.
 function GM:OnPlayerPicked(player, role)
 	local callback = TTT.Role.stored[role].Callback;
+	
+	print("OnPlayerPicked Callback for role: "..role);
 	
 	if (callback) then
 		pcall(Callback, player);

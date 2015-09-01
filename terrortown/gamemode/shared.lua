@@ -44,7 +44,6 @@ function util.Include(name)
 	end;
 	
 	include(name);
-	print("included file: "..name);
 end;
 
 -- A function to include files in a directory.
